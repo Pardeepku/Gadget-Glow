@@ -737,7 +737,8 @@ export function convertToArticle(
       item.originalImage ||
       'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80',
     imageCaption: `${item.detectedDistrict ? `${item.detectedDistrict}: ` : ''}${item.rewrittenTitle || item.originalTitle}`,
-    imageCredit: `साभार: ${item.sourceName} / गैजेट ग्लो डिजिटल डेस्क`,
+    imageCredit: item.sourceName ? `साभार: ${item.sourceName}` : '',
+    showImageCredit: false,
     imageAlt: item.rewrittenTitle || item.originalTitle,
     categoryId: item.targetCategoryId || 'cat-desh',
     categoryName: item.targetCategoryId === 'cat-haryana' ? 'हरियाणा' : item.targetCategoryId === 'cat-tech' ? 'टेक्नोलॉजी' : 'ताजा खबर',

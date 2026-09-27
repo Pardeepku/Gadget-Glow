@@ -26,6 +26,7 @@ export interface Article {
   featuredImage: string;
   imageCaption?: string;
   imageCredit?: string;
+  showImageCredit?: boolean;
   imageAlt?: string;
   gallery?: string[];
   categoryId: string;

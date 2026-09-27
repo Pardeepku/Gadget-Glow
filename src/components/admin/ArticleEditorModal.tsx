@@ -62,6 +62,7 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
   const [featuredImage, setFeaturedImage] = useState('');
   const [imageCaption, setImageCaption] = useState('');
   const [imageCredit, setImageCredit] = useState('');
+  const [showImageCredit, setShowImageCredit] = useState(false);
   const [gallery, setGallery] = useState<string[]>([]);
   const [newGalleryUrl, setNewGalleryUrl] = useState('');
   const [tagsInput, setTagsInput] = useState('');
@@ -88,6 +89,7 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
       setFeaturedImage(article.featuredImage);
       setImageCaption(article.imageCaption || '');
       setImageCredit(article.imageCredit || '');
+      setShowImageCredit(Boolean(article.showImageCredit));
       setGallery(article.gallery || []);
       setTagsInput(article.tags?.join(', ') || '');
       setLocation(article.location || '');
@@ -96,7 +98,7 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
       setStatus(article.status);
       setFocusKeyword(article.seoKeywords?.[0] || article.tags?.[0] || '');
     } else {
-      // Default new article state
+      // Default new article state - Predefault showImageCredit is FALSE (unchecked)
       setTitle('');
       setSlug('');
       setShortDescription('');
@@ -106,7 +108,8 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
       setAuthorId(authors[0]?.id || 'auth-1');
       setFeaturedImage('https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80');
       setImageCaption('');
-      setImageCredit('News Bureau');
+      setImageCredit('');
+      setShowImageCredit(false);
       setGallery([]);
       setTagsInput('News, Latest, Special');
       setLocation('New Delhi');
@@ -183,7 +186,6 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
           const customName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
           const url = await uploadMediaFile(optimized.blob, 'articles', customName);
           setFeaturedImage(url);
-          if (!imageCredit) setImageCredit('Staff Photojournalist');
           setUploadingImage(false);
           return;
         } catch (err) {
@@ -192,14 +194,12 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
       }
 
       setFeaturedImage(optimized.dataUrl);
-      if (!imageCredit) setImageCredit('Staff Photojournalist');
     } catch (err) {
       console.error('Image compression error:', err);
       const reader = new FileReader();
       reader.onload = (uploadEvent) => {
         const base64 = uploadEvent.target?.result as string;
         setFeaturedImage(base64);
-        if (!imageCredit) setImageCredit('Staff Photojournalist');
       };
       reader.readAsDataURL(file);
     } finally {
@@ -294,7 +294,12 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
       if (selectedAuthor?.photo) payload.authorPhoto = selectedAuthor.photo;
       if (selectedAuthor?.designation) payload.authorRole = selectedAuthor.designation;
       if (imageCaption.trim()) payload.imageCaption = imageCaption.trim();
-      if (imageCredit.trim()) payload.imageCredit = imageCredit.trim();
+      payload.showImageCredit = Boolean(showImageCredit);
+      if (showImageCredit && imageCredit.trim()) {
+        payload.imageCredit = imageCredit.trim();
+      } else {
+        payload.imageCredit = '';
+      }
       if (gallery.length > 0) payload.gallery = gallery;
       if (location.trim()) payload.location = location.trim();
       if (status === 'published') {
@@ -421,10 +426,12 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
               {featuredImage && (
                 <div className="rounded-xl overflow-hidden bg-slate-900">
                   <img src={featuredImage} alt="Featured" className="w-full max-h-[400px] object-cover" />
-                  {(imageCaption || imageCredit) && (
+                  {(imageCaption || (showImageCredit && imageCredit)) && (
                     <div className="bg-slate-950 text-slate-300 text-xs p-2.5 flex justify-between">
                       <span>{imageCaption}</span>
-                      <span className="font-mono text-slate-400">Credit: {imageCredit}</span>
+                      {showImageCredit && imageCredit && (
+                        <span className="font-mono text-slate-400">फोटो: {imageCredit}</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -660,21 +667,50 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
                       placeholder="https://images.unsplash.com/..."
                       className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-red-500"
                     />
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
                       <input
                         type="text"
                         value={imageCaption}
                         onChange={(e) => setImageCaption(e.target.value)}
-                        placeholder="Image Caption"
+                        placeholder="फ़ोटो विवरण / Image Caption (वैकल्पिक)"
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white"
                       />
-                      <input
-                        type="text"
-                        value={imageCredit}
-                        onChange={(e) => setImageCredit(e.target.value)}
-                        placeholder="Photo Credit (e.g., Staff / Reuters)"
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white"
-                      />
+
+                      {/* Optional Photo Credit Section (Predefault is Unchecked) */}
+                      <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5 space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={showImageCredit}
+                            onChange={(e) => setShowImageCredit(e.target.checked)}
+                            className="w-4 h-4 rounded text-red-600 bg-slate-800 border-slate-700 focus:ring-red-500 cursor-pointer"
+                          />
+                          <span className="text-xs font-bold text-slate-200 flex flex-wrap items-center gap-1.5">
+                            <span>फ़ोटो पर क्रेडिट सेक्शन दिखाएं (Show Credit on Photo)</span>
+                            <span className="text-[10px] text-amber-400 font-normal">
+                              (डिफ़ॉल्ट रूप से बंद — चेक करने पर ही फ़ोटो के नीचे क्रेडिट दिखेगा)
+                            </span>
+                          </span>
+                        </label>
+
+                        {showImageCredit && (
+                          <div className="pl-6 pt-1 space-y-1">
+                            <label className="block text-[11px] font-semibold text-slate-300">
+                              फ़ोटो / न्यूज़ क्रेडिट (Photo & News Credit):
+                            </label>
+                            <input
+                              type="text"
+                              value={imageCredit}
+                              onChange={(e) => setImageCredit(e.target.value)}
+                              placeholder="साभार: HRBREAKINGNEWS / पीटीआई / विशेष संवाददाता"
+                              className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
+                            />
+                            <p className="text-[10px] text-slate-400">
+                              यह क्रेडिट फ़ोटो के नीचे दाईं ओर "फोटो: {imageCredit || '...'}" के रूप में दिखाई देगा।
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -957,7 +993,6 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
         onApplyImage={(url) => {
           setFeaturedImage(url);
           if (!imageCaption && title) setImageCaption(title);
-          if (!imageCredit) setImageCredit('साभार: Gadget Glow AI Visual Studio');
         }}
       />
     </div>
