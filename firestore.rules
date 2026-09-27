@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "saini.pardeep45@gmail.com" ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "super_admin")
+      );
+    }
+
+    // Articles collection (Public news reading and CMS management)
+    match /articles/{articleId} {
+      allow read, write: if true;
+    }
+
+    // Categories and Subcategories
+    match /categories/{categoryId} {
+      allow read, write: if true;
+    }
+
+    match /subcategories/{subcategoryId} {
+      allow read, write: if true;
+    }
+
+    // Breaking News
+    match /breakingNews/{id} {
+      allow read, write: if true;
+    }
+
+    // Advertisements
+    match /advertisements/{adId} {
+      allow read, write: if true;
+    }
+
+    // Authors / Reporters
+    match /authors/{authorId} {
+      allow read, write: if true;
+    }
+
+    // Videos & Media
+    match /videos/{videoId} {
+      allow read, write: if true;
+    }
+
+    match /media/{mediaId} {
+      allow read, write: if true;
+    }
+
+    // E-Paper Editions
+    match /epaper/{epaperId} {
+      allow read, write: if true;
+    }
+
+    // Site & SEO Settings
+    match /siteSettings/{settingId} {
+      allow read, write: if true;
+    }
+
+    match /seoSettings/{settingId} {
+      allow read, write: if true;
+    }
+
+    match /homepageSections/{sectionId} {
+      allow read, write: if true;
+    }
+
+    // User accounts
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Comments
+    match /comments/{commentId} {
+      allow read, write: if true;
+    }
+
+    // Contact Messages
+    match /contactMessages/{messageId} {
+      allow read, write: if true;
+    }
+
+    // Newsletter Subscribers
+    match /newsletterSubscribers/{subId} {
+      allow read, write: if true;
+    }
+
+    // Activity Logs
+    match /activityLogs/{logId} {
+      allow read, write: if true;
+    }
+
+    // Default fallback
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+

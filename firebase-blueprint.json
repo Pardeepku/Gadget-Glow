@@ -1,0 +1,181 @@
+{
+  "entities": {
+    "Article": {
+      "title": "Article",
+      "description": "News article entity with multi-language and rich media metadata",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 500 },
+        "slug": { "type": "string", "maxLength": 200, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "shortDescription": { "type": "string", "maxLength": 1000 },
+        "content": { "type": "string", "maxLength": 50000 },
+        "featuredImage": { "type": "string", "maxLength": 1000 },
+        "imageCaption": { "type": "string", "maxLength": 500 },
+        "imageCredit": { "type": "string", "maxLength": 200 },
+        "categoryId": { "type": "string", "maxLength": 128 },
+        "categoryName": { "type": "string", "maxLength": 128 },
+        "subcategoryId": { "type": "string", "maxLength": 128 },
+        "subcategoryName": { "type": "string", "maxLength": 128 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 128 },
+        "authorRole": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["draft", "published", "pending_review", "archived"] },
+        "isBreaking": { "type": "boolean" },
+        "isFeatured": { "type": "boolean" },
+        "isTrending": { "type": "boolean" },
+        "isEditorsPick": { "type": "boolean" },
+        "language": { "type": "string", "enum": ["hi", "en"] },
+        "location": { "type": "string", "maxLength": 128 },
+        "views": { "type": "number" },
+        "likes": { "type": "number" },
+        "seoTitle": { "type": "string", "maxLength": 200 },
+        "seoDescription": { "type": "string", "maxLength": 500 },
+        "videoUrl": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "publishedAt": { "type": "string" }
+      },
+      "required": ["title", "slug", "content", "categoryId", "authorId", "status"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Primary news category entity",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 128 },
+        "nameHi": { "type": "string", "maxLength": 128 },
+        "slug": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "description": { "type": "string", "maxLength": 500 },
+        "image": { "type": "string", "maxLength": 1000 },
+        "order": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["name", "nameHi", "slug"]
+    },
+    "Subcategory": {
+      "title": "Subcategory",
+      "description": "Child subcategory or district entity",
+      "type": "object",
+      "properties": {
+        "parentCategoryId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "nameHi": { "type": "string", "maxLength": 128 },
+        "slug": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "order": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["parentCategoryId", "name", "nameHi", "slug"]
+    },
+    "BreakingNews": {
+      "title": "BreakingNews",
+      "description": "Urgent breaking news alerts for live marquee",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 300 },
+        "url": { "type": "string", "maxLength": 500 },
+        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "expiresAt": { "type": "string" }
+      },
+      "required": ["title", "isActive"]
+    },
+    "Advertisement": {
+      "title": "Advertisement",
+      "description": "Banner or code ad placement",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "position": { "type": "string", "enum": ["header", "homepage_top", "homepage_middle", "sidebar", "article_top", "article_middle", "article_bottom", "footer", "mobile_sticky"] },
+        "type": { "type": "string", "enum": ["image", "code"] },
+        "imageUrl": { "type": "string", "maxLength": 1000 },
+        "targetUrl": { "type": "string", "maxLength": 1000 },
+        "htmlCode": { "type": "string", "maxLength": 5000 },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["title", "position", "type", "isActive"]
+    },
+    "Author": {
+      "title": "Author",
+      "description": "Journalist or reporter profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["super_admin", "admin", "editor", "reporter", "moderator"] },
+        "photoURL": { "type": "string", "maxLength": 1000 },
+        "bio": { "type": "string", "maxLength": 1000 },
+        "designation": { "type": "string", "maxLength": 128 },
+        "location": { "type": "string", "maxLength": 128 },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "EPaperEdition": {
+      "title": "EPaperEdition",
+      "description": "Digital newspaper edition with PDF and page previews",
+      "type": "object",
+      "properties": {
+        "editionName": { "type": "string", "maxLength": 200 },
+        "date": { "type": "string" },
+        "thumbnailUrl": { "type": "string", "maxLength": 1000 },
+        "totalPages": { "type": "number" },
+        "pdfUrl": { "type": "string", "maxLength": 1000 },
+        "pages": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["editionName", "date", "pdfUrl"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "General portal configuration and metadata",
+      "type": "object",
+      "properties": {
+        "websiteName": { "type": "string", "maxLength": 128 },
+        "tagline": { "type": "string", "maxLength": 200 },
+        "logo": { "type": "string", "maxLength": 1000 },
+        "contactEmail": { "type": "string", "maxLength": 128 },
+        "phone": { "type": "string", "maxLength": 64 },
+        "address": { "type": "string", "maxLength": 500 },
+        "defaultSeoTitle": { "type": "string", "maxLength": 200 },
+        "defaultSeoDesc": { "type": "string", "maxLength": 500 },
+        "commentsEnabled": { "type": "boolean" },
+        "maintenanceMode": { "type": "boolean" }
+      }
+    }
+  },
+  "firestore": {
+    "/articles/{articleId}": {
+      "schema": "Article",
+      "description": "News articles collection"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Primary news categories"
+    },
+    "/subcategories/{subcategoryId}": {
+      "schema": "Subcategory",
+      "description": "Hierarchical subcategories and districts"
+    },
+    "/breakingNews/{id}": {
+      "schema": "BreakingNews",
+      "description": "Active breaking news items"
+    },
+    "/advertisements/{adId}": {
+      "schema": "Advertisement",
+      "description": "Ad slots and campaign banners"
+    },
+    "/authors/{authorId}": {
+      "schema": "Author",
+      "description": "Reporters and editors"
+    },
+    "/epaper/{epaperId}": {
+      "schema": "EPaperEdition",
+      "description": "Digital e-paper editions"
+    },
+    "/siteSettings/{settingId}": {
+      "schema": "SiteSettings",
+      "description": "Portal wide settings"
+    }
+  }
+}

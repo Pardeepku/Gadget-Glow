@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="hi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <script>
+      // Suppress benign third-party browser extension errors (e.g., MetaMask, Web3 wallets)
+      (function() {
+        var isExtensionError = function(msg, source) {
+          var str = (msg || '') + ' ' + (source || '');
+          return /metamask|ethereum|web3|solana|phantom|extension|chrome-extension|moz-extension/i.test(str);
+        };
+        window.addEventListener('unhandledrejection', function(event) {
+          var reason = event.reason;
+          var msg = (typeof reason === 'string') ? reason : (reason && reason.message) ? reason.message : '';
+          if (isExtensionError(msg, '')) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+        window.addEventListener('error', function(event) {
+          var msg = event.message || '';
+          var src = event.filename || '';
+          if (isExtensionError(msg, src)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
+    <title>Gadget Glow - गैजेट, टेक और डिजिटल दुनिया की हर खबर | News Portal</title>
+    <meta name="description" content="गैजेट ग्लो पर पढ़ें टेक्नोलॉजी, स्मार्टफोन्स, गैजेट्स, देश, दुनिया, हरियाणा, राजनीति, अपराध और कारोबार की सबसे तेज व विश्वसनीय खबरें।" />
+    <meta property="og:title" content="Gadget Glow - गैजेट, टेक और डिजिटल दुनिया की हर खबर" />
+    <meta property="og:description" content="गैजेट ग्लो पर पढ़ें टेक्नोलॉजी, स्मार्टफोन्स, गैजेट्स, देश, दुनिया, हरियाणा, राजनीति, अपराध और कारोबार की सबसे तेज व विश्वसनीय खबरें।" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700;800&family=Yatra+One&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-red-600 selection:text-white transition-colors duration-200">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

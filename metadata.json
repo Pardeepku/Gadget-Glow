@@ -1,0 +1,6 @@
+{
+  "name": "Gadget Glow",
+  "description": "Gadget Glow - गैजेट, टेक और डिजिटल दुनिया की हर खबर. Digital news & tech portal with AI Image Studio, URL news fetcher, breaking ticker, and live CMS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
