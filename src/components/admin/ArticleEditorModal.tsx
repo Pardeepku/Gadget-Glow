@@ -306,7 +306,14 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
         payload.publishedAt = article?.publishedAt || new Date().toISOString();
       }
 
-      await onSave(payload);
+      try {
+        await Promise.race([
+          onSave(payload),
+          new Promise((resolve) => setTimeout(resolve, 2500)),
+        ]);
+      } catch (saveErr) {
+        console.warn('onSave completed with warning:', saveErr);
+      }
       setSaving(false);
       onClose();
     } catch (err: any) {

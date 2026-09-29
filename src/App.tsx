@@ -393,19 +393,35 @@ const MainApp: React.FC = () => {
   };
 
   const handleSaveArticle = async (articleData: Partial<Article>) => {
-    if (editingArticle && editingArticle.id) {
+    let saved: Article;
+    const isRealExistingArticle =
+      Boolean(editingArticle?.id) &&
+      !editingArticle?.id?.startsWith('url-item-') &&
+      !editingArticle?.id?.startsWith('temp-');
+
+    if (isRealExistingArticle && editingArticle?.id) {
       await dbService.updateArticle(
         editingArticle.id,
         articleData,
         currentUser?.displayName || 'संपादक'
       );
+      saved = { ...editingArticle, ...articleData } as Article;
     } else {
-      await dbService.createArticle(
-        articleData as any,
+      const cleanPayload = { ...articleData };
+      delete (cleanPayload as any).id;
+      saved = await dbService.createArticle(
+        cleanPayload as any,
         currentUser?.displayName || 'संपादक'
       );
     }
-    await refreshData();
+
+    // Immediately update articles state so it reflects across the app without waiting
+    setArticles((prev) => [saved, ...prev.filter((a) => a.id !== saved.id)]);
+    setIsArticleModalOpen(false);
+    setEditingArticle(null);
+
+    // Non-blocking background sync for other collections
+    refreshData().catch(console.warn);
   };
 
   const handleDeleteArticle = async (id: string) => {

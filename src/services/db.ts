@@ -330,7 +330,7 @@ export const dbService = {
         : {}),
     });
 
-    // 1. Update local custom articles cache
+    // 1. Update local custom articles cache immediately
     const customList = getLocalCustomArticles();
     const idx = customList.findIndex((a) => a.id === id);
     if (idx >= 0) {
@@ -341,25 +341,37 @@ export const dbService = {
       const base = INITIAL_ARTICLES.find((a) => a.id === id);
       if (base) {
         customList.unshift({ ...base, ...updateData });
-        saveLocalCustomArticles(customList);
+      } else {
+        customList.unshift({ id, ...updateData } as Article);
       }
+      saveLocalCustomArticles(customList);
     }
 
-    // 2. Update Firestore (use setDoc with merge: true for resilient upsert)
+    // 2. Update Firestore with non-blocking timeout race
     if (db) {
+      const firestoreWritePromise = setDoc(doc(db, 'articles', id), updateData, { merge: true })
+        .then(() => {
+          this.logActivity({
+            userId: 'admin-action',
+            userName: adminName || 'संपादक',
+            action: 'Article Updated',
+            entityType: 'Article',
+            entityId: id,
+            details: `समाचार अपडेट किया गया: ${id}`,
+            timestamp: new Date().toISOString(),
+          }).catch(console.warn);
+        })
+        .catch((error) => {
+          console.warn('Firestore article upsert error, saved locally:', error);
+        });
+
       try {
-        await setDoc(doc(db, 'articles', id), updateData, { merge: true });
-        this.logActivity({
-          userId: 'admin-action',
-          userName: adminName || 'संपादक',
-          action: 'Article Updated',
-          entityType: 'Article',
-          entityId: id,
-          details: `समाचार अपडेट किया गया: ${id}`,
-          timestamp: new Date().toISOString(),
-        }).catch(console.warn);
-      } catch (error) {
-        console.warn('Firestore article upsert error, saved locally:', error);
+        await Promise.race([
+          firestoreWritePromise,
+          new Promise((resolve) => setTimeout(resolve, 1000)),
+        ]);
+      } catch {
+        // Continue
       }
     }
 
