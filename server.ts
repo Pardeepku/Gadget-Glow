@@ -214,6 +214,83 @@ app.get('/api/ai/proxy-image', async (req, res) => {
   }
 });
 
+// Extract complete news story from HTML
+function extractCompleteStoryFromHtml(html: string, targetUrl: string) {
+  let title =
+    html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)?.[1] ||
+    html.match(/<meta[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["']/i)?.[1] ||
+    html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ||
+    html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] ||
+    '';
+  title = title.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+
+  let summary =
+    html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)?.[1] ||
+    html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i)?.[1] ||
+    html.match(/<meta[^>]*name=["']twitter:description["'][^>]*content=["']([^"']+)["']/i)?.[1] ||
+    '';
+  summary = summary.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+
+  let image =
+    html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1] ||
+    html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)?.[1] ||
+    '';
+
+  let paragraphs: string[] = [];
+  const ldMatches = [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  for (const m of ldMatches) {
+    try {
+      const parsed = JSON.parse(m[1]);
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      for (const item of list) {
+        if (item && item.articleBody && typeof item.articleBody === 'string' && item.articleBody.length > 150) {
+          paragraphs = item.articleBody
+            .split(/\n+/)
+            .map((p: string) => p.trim())
+            .filter((p: string) => p.length > 25);
+          if (paragraphs.length >= 2) break;
+        }
+      }
+      if (paragraphs.length >= 2) break;
+    } catch {}
+  }
+
+  if (paragraphs.length < 2) {
+    const stripped = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<header[\s\S]*?<\/header>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<aside[\s\S]*?<\/aside>/gi, '');
+
+    const pMatches = [...stripped.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)];
+    const seen = new Set<string>();
+    for (const pm of pMatches) {
+      const clean = pm[1]
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (
+        clean.length > 25 &&
+        !seen.has(clean) &&
+        !clean.includes('Copyright') &&
+        !clean.includes('Rights Reserved') &&
+        !clean.includes('Terms of Use') &&
+        !clean.includes('Privacy Policy') &&
+        !clean.startsWith('Follow us on')
+      ) {
+        seen.add(clean);
+        paragraphs.push(clean);
+      }
+    }
+  }
+
+  const content = paragraphs.map((p) => `<p class="mb-3 leading-relaxed">${p}</p>`).join('\n');
+  return { title, summary, image, paragraphs, content };
+}
+
 // 1. Fast URL Scraper Proxy endpoint with timeout, bot-resilient headers, and reader fallbacks
 app.get('/api/fetch-url', async (req, res) => {
   try {
@@ -246,12 +323,20 @@ app.get('/api/fetch-url', async (req, res) => {
       if (response.ok) {
         const html = await response.text();
         if (html && html.length > 500) {
-          res.json({
-            success: true,
-            html,
-            finalUrl: response.url || targetUrl,
-          });
-          return;
+          const parsed = extractCompleteStoryFromHtml(html, response.url || targetUrl);
+          if (parsed.paragraphs && parsed.paragraphs.length >= 2) {
+            res.json({
+              success: true,
+              title: parsed.title,
+              summary: parsed.summary,
+              content: parsed.content,
+              paragraphs: parsed.paragraphs,
+              image: parsed.image,
+              html,
+              finalUrl: response.url || targetUrl,
+            });
+            return;
+          }
         }
       }
     } catch (directErr) {
@@ -306,8 +391,7 @@ app.get('/api/fetch-url', async (req, res) => {
 
           const summary = paragraphs[0]?.replace(/\*\*/g, '').slice(0, 240) || '';
           const htmlContent = paragraphs
-            .slice(0, 12)
-            .map((p) => `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`)
+            .map((p) => `<p class="mb-3 leading-relaxed">${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`)
             .join('\n');
 
           const wrappedHtml = `<!DOCTYPE html><html><head><title>${rawTitle}</title><meta property="og:title" content="${rawTitle}"><meta property="og:description" content="${summary}"><meta property="og:image" content="${leadImage}"></head><body><h1>${rawTitle}</h1><img src="${leadImage}" alt="${rawTitle}" /><div class="article-body">${htmlContent}</div></body></html>`;
@@ -317,6 +401,7 @@ app.get('/api/fetch-url', async (req, res) => {
             title: rawTitle,
             summary,
             content: htmlContent,
+            paragraphs,
             image: leadImage,
             html: wrappedHtml,
             finalUrl: targetUrl,

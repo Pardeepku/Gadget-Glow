@@ -32,6 +32,8 @@ import {
   Wand2,
   Image as ImageIcon,
   Home,
+  FileText,
+  Edit3,
 } from 'lucide-react';
 import { AiImageAgentModal } from './AiImageAgentModal';
 
@@ -60,7 +62,7 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
   const [historyItems, setHistoryItems] = useState<RawNewsItem[]>([]);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
-  const [previewContentExpanded, setPreviewContentExpanded] = useState(false);
+  const [previewContentExpanded, setPreviewContentExpanded] = useState(true);
 
   // AI Rewriting states
   const [isRewritingWithAi, setIsRewritingWithAi] = useState(false);
@@ -1062,32 +1064,63 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
             </div>
           </div>
 
-          {/* Collapsible Story Content Preview */}
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-800">
-            <button
-              onClick={() => setPreviewContentExpanded(!previewContentExpanded)}
-              className="text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 font-semibold flex items-center gap-1.5 py-1 cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>
-                {previewContentExpanded
-                  ? 'विस्तृत समाचार सामग्री छिपाएं (Hide Full Story)'
-                  : 'विस्तृत समाचार सामग्री देखें (View Full Formatted Story Preview)'}
-              </span>
-            </button>
+          {/* Full Complete Story Content Section (Prominently displayed) */}
+          {(() => {
+            const currentContent =
+              activeStoryTab === 'rewritten'
+                ? fetchedItem.rewrittenContent || fetchedItem.originalContent
+                : fetchedItem.originalContent;
+            const paragraphMatches = currentContent ? (currentContent.match(/<p/gi) || []).length : 0;
+            const approxWords = currentContent ? currentContent.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length : 0;
 
-            {previewContentExpanded && (
-              <div
-                className="mt-3 p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 space-y-2 max-h-80 overflow-y-auto font-sans leading-relaxed shadow-inner"
-                dangerouslySetInnerHTML={{
-                  __html:
-                    activeStoryTab === 'rewritten'
-                      ? fetchedItem.rewrittenContent || fetchedItem.originalContent
-                      : fetchedItem.originalContent,
-                }}
-              />
-            )}
-          </div>
+            return (
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-100 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                      {activeStoryTab === 'rewritten' ? '✨ सम्पूर्ण AI पुनर्लेखित समाचार' : '📰 सम्पूर्ण समाचार विवरण (Complete Story)'}
+                    </span>
+                    <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                      <span>{paragraphMatches > 0 ? `${paragraphMatches} पैराग्राफ` : 'पूर्ण आलेख'}</span>
+                    </span>
+                    <span className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                      ~{approxWords} शब्द
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewContentExpanded(!previewContentExpanded)}
+                      className="text-xs text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-white font-medium flex items-center gap-1 py-1 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{previewContentExpanded ? 'संक्षिप्त करें' : 'विस्तार से देखें'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditor(fetchedItem)}
+                      className="text-xs text-sky-600 dark:text-sky-400 hover:underline font-semibold flex items-center gap-1 py-1 cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>एडिटर में खोलें</span>
+                    </button>
+                  </div>
+                </div>
+
+                {previewContentExpanded && (
+                  <div
+                    className="p-5 bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm text-slate-800 dark:text-slate-200 space-y-3.5 max-h-96 overflow-y-auto font-sans leading-relaxed shadow-inner"
+                    dangerouslySetInnerHTML={{
+                      __html: currentContent || '<p>कोई समाचार सामग्री उपलब्ध नहीं है।</p>',
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })()}
 
           {/* ACTION BUTTONS & PUBLISH TO WEBSITE OPTION */}
           <div className="pt-5 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
