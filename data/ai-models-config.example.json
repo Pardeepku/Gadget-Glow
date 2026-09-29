@@ -1,7 +1,6 @@
 {
-  "geminiApiKey": "",
   "openAiApiKey": "",
-  "defaultProvider": "gemini",
-  "geminiModel": "gemini-3.1-flash-image",
-  "openAiModel": "chatgpt-image-latest"
+  "defaultProvider": "chatgpt",
+  "openAiChatModel": "gpt-4o-mini",
+  "openAiModel": "dall-e-3"
 }

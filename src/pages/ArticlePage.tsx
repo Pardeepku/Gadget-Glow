@@ -461,11 +461,11 @@ export const ArticlePage: React.FC<ArticlePageProps> = ({
               alt={article.imageAlt || article.title}
               className="w-full max-h-[500px] object-cover"
             />
-            {(article.imageCaption || (article.showImageCredit && article.imageCredit)) && (
+            {(article.imageCaption || (article.showImageCredit === true && article.imageCredit?.trim())) && (
               <div className="bg-slate-900/90 text-slate-300 text-xs px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <span>{article.imageCaption}</span>
-                {article.showImageCredit && article.imageCredit && (
-                  <span className="text-slate-400 font-mono text-[11px]">फोटो: {article.imageCredit}</span>
+                {article.showImageCredit === true && article.imageCredit?.trim() && (
+                  <span className="text-slate-400 font-mono text-[11px]">फोटो: {article.imageCredit.trim()}</span>
                 )}
               </div>
             )}

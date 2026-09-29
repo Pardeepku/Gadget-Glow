@@ -120,7 +120,7 @@ function filterLocalArticles(source: Article[], filter?: {
 }): Article[] {
   let items = [...source];
   if (filter?.status) {
-    items = items.filter((a) => a.status === filter.status);
+    items = items.filter((a) => a.status === filter.status || (!a.status && filter.status === 'published'));
   }
   if (filter?.categoryId) {
     items = items.filter((a) => a.categoryId === filter.categoryId);
@@ -153,8 +153,10 @@ function filterLocalArticles(source: Article[], filter?: {
   }
 
   items.sort((a, b) => {
-    const timeA = new Date(a.publishedAt || a.createdAt || 0).getTime();
-    const timeB = new Date(b.publishedAt || b.createdAt || 0).getTime();
+    const rawA = a.publishedAt || a.createdAt;
+    const rawB = b.publishedAt || b.createdAt;
+    const timeA = typeof rawA === 'object' && rawA && 'seconds' in rawA ? (rawA as any).seconds * 1000 : new Date(rawA || 0).getTime() || 0;
+    const timeB = typeof rawB === 'object' && rawB && 'seconds' in rawB ? (rawB as any).seconds * 1000 : new Date(rawB || 0).getTime() || 0;
     return timeB - timeA;
   });
 

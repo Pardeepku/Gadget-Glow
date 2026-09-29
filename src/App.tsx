@@ -2,7 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { dbService } from './services/db';
+import { dbService, getLocalCustomArticles } from './services/db';
+import {
+  INITIAL_CATEGORIES,
+  INITIAL_SUBCATEGORIES,
+  INITIAL_AUTHORS,
+  INITIAL_BREAKING_NEWS,
+  INITIAL_ARTICLES,
+  INITIAL_VIDEOS,
+  INITIAL_ADVERTISEMENTS,
+  INITIAL_EPAPER_EDITIONS,
+  INITIAL_SITE_SETTINGS,
+  INITIAL_SEO_SETTINGS,
+} from './data/initialData';
 import {
   parseRouteFromLocation,
   buildUrl,
@@ -90,21 +102,28 @@ const MainApp: React.FC = () => {
   const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
 
-  // Dynamic Data Store States
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [authors, setAuthors] = useState<Author[]>([]);
-  const [videos, setVideos] = useState<VideoNews[]>([]);
-  const [breakingNews, setBreakingNews] = useState<BreakingNews[]>([]);
-  const [ads, setAds] = useState<Advertisement[]>([]);
-  const [epaperEditions, setEpaperEditions] = useState<EPaperEdition[]>([]);
-  const [seoSettings, setSeoSettings] = useState<SeoSettings>(dbService.getSeoSettings());
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>(dbService.getSiteSettings());
+  // Dynamic Data Store States (Initialized immediately with complete news data for 0ms initial load)
+  const [articles, setArticles] = useState<Article[]>(() => {
+    const local = getLocalCustomArticles();
+    if (local && local.length > 0) {
+      const existingIds = new Set(local.map((a) => a.id));
+      return [...local, ...INITIAL_ARTICLES.filter((a) => !existingIds.has(a.id))];
+    }
+    return INITIAL_ARTICLES;
+  });
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>(INITIAL_SUBCATEGORIES);
+  const [authors, setAuthors] = useState<Author[]>(INITIAL_AUTHORS);
+  const [videos, setVideos] = useState<VideoNews[]>(INITIAL_VIDEOS);
+  const [breakingNews, setBreakingNews] = useState<BreakingNews[]>(INITIAL_BREAKING_NEWS);
+  const [ads, setAds] = useState<Advertisement[]>(INITIAL_ADVERTISEMENTS);
+  const [epaperEditions, setEpaperEditions] = useState<EPaperEdition[]>(INITIAL_EPAPER_EDITIONS);
+  const [seoSettings, setSeoSettings] = useState<SeoSettings>(INITIAL_SEO_SETTINGS);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(INITIAL_SITE_SETTINGS);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Refresh all state from DB
+  // Refresh all state from DB in background
   const refreshData = async () => {
     try {
       const [
@@ -133,19 +152,23 @@ const MainApp: React.FC = () => {
         dbService.getActivityLogs(),
       ]);
 
-      setArticles(fetchedArticles);
-      setCategories(fetchedCategories);
-      setSubcategories(fetchedSubcategories);
-      setAuthors(fetchedAuthors);
-      setVideos(fetchedVideos);
-      setBreakingNews(fetchedBreaking);
-      setAds(fetchedAds);
-      setEpaperEditions(fetchedEpaper);
-      setSeoSettings(fetchedSeo);
-      setSiteSettings(fetchedSite);
-      setActivityLogs(fetchedLogs);
+      if (fetchedArticles && fetchedArticles.length > 0) {
+        const existingIds = new Set(fetchedArticles.map((a) => a.id));
+        const combined = [...fetchedArticles, ...INITIAL_ARTICLES.filter((a) => !existingIds.has(a.id))];
+        setArticles(combined);
+      }
+      if (fetchedCategories && fetchedCategories.length > 0) setCategories(fetchedCategories);
+      if (fetchedSubcategories && fetchedSubcategories.length > 0) setSubcategories(fetchedSubcategories);
+      if (fetchedAuthors && fetchedAuthors.length > 0) setAuthors(fetchedAuthors);
+      if (fetchedVideos && fetchedVideos.length > 0) setVideos(fetchedVideos);
+      if (fetchedBreaking && fetchedBreaking.length > 0) setBreakingNews(fetchedBreaking);
+      if (fetchedAds && fetchedAds.length > 0) setAds(fetchedAds);
+      if (fetchedEpaper && fetchedEpaper.length > 0) setEpaperEditions(fetchedEpaper);
+      if (fetchedSeo) setSeoSettings(fetchedSeo);
+      if (fetchedSite) setSiteSettings(fetchedSite);
+      if (fetchedLogs && fetchedLogs.length > 0) setActivityLogs(fetchedLogs);
     } catch (err) {
-      console.error('Error refreshing data from DB:', err);
+      console.warn('Error refreshing data from DB, keeping initial data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -720,6 +743,7 @@ const MainApp: React.FC = () => {
                 categorySlug={activeCategorySlug}
                 categories={categories}
                 subcategories={subcategories}
+                articles={articles}
                 onSelectArticle={navigateToArticle}
                 onSelectCategory={navigateToCategory}
                 onNavigate={handleNavigate}

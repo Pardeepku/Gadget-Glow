@@ -66,10 +66,9 @@ export const AiImageStudio: React.FC<AiImageStudioProps> = ({
   const [badgeText, setBadgeText] = useState('ब्रेकिंग न्यूज़ | GADGET GLOW EXCLUSIVE');
   const [includeHeadlineOverlay, setIncludeHeadlineOverlay] = useState(true);
 
-  // Model Selection: Google Gemini vs ChatGPT (OpenAI)
-  const [aiProvider, setAiProvider] = useState<'gemini' | 'chatgpt'>('gemini');
+  // Model Selection: OpenAI ChatGPT (DALL-E 3)
+  const [aiProvider, setAiProvider] = useState<'chatgpt'>('chatgpt');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [hasGeminiKey, setHasGeminiKey] = useState(false);
   const [hasOpenAiKey, setHasOpenAiKey] = useState(false);
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -85,7 +84,7 @@ export const AiImageStudio: React.FC<AiImageStudioProps> = ({
 
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [activeModelLabel, setActiveModelLabel] = useState<string>('Google Gemini AI');
+  const [activeModelLabel, setActiveModelLabel] = useState<string>('OpenAI ChatGPT (DALL-E 3)');
 
   // Load AI configuration to check keys
   const loadConfig = () => {
@@ -93,13 +92,8 @@ export const AiImageStudio: React.FC<AiImageStudioProps> = ({
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setHasGeminiKey(Boolean(data.hasGeminiKey));
           setHasOpenAiKey(Boolean(data.hasOpenAiKey));
-          if (data.defaultProvider === 'chatgpt') {
-            setAiProvider('chatgpt');
-          } else {
-            setAiProvider('gemini');
-          }
+          setAiProvider('chatgpt');
         }
       })
       .catch(() => {});
@@ -290,12 +284,7 @@ export const AiImageStudio: React.FC<AiImageStudioProps> = ({
     setStatusMsg(null);
     setErrorMsg(null);
 
-    const providerTitle =
-      aiProvider === 'chatgpt'
-        ? 'ChatGPT (DALL-E 3)'
-        : useSearchGrounding
-        ? 'Nano Banana 2 (Google Search Grounded)'
-        : 'Google Gemini (Nano Banana 2)';
+    const providerTitle = 'OpenAI ChatGPT (DALL-E 3)';
     setStatusMsg(`Connecting with ${providerTitle}...`);
 
     try {
@@ -406,16 +395,16 @@ export const AiImageStudio: React.FC<AiImageStudioProps> = ({
               <span className="bg-gradient-to-r from-purple-600 to-rose-600 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
                 AI Studio
               </span>
-              <span className="bg-purple-500/20 text-purple-300 border border-purple-400/30 text-[10px] font-semibold px-2 py-0.5 rounded">
-                Gemini &amp; ChatGPT Image Generator
+              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-semibold px-2 py-0.5 rounded">
+                OpenAI ChatGPT &amp; DALL-E 3
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5">
               <span>AI Image Studio Agent</span>
-              <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />
+              <Sparkles className="w-6 h-6 text-emerald-300 animate-pulse" />
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Google Gemini और ChatGPT (OpenAI) दोनों AI मॉडल्स से सिमिलर इमेज बनाएं, ब्रेकिंग न्यूज़ स्टाइल रिबन लगाएं, या नए प्रॉम्ट से हाई-डेफिनिशन फ़ोटो तैयार करें।
+              OpenAI ChatGPT व DALL-E 3 से सिमिलर इमेज बनाएं, ब्रेकिंग न्यूज़ स्टाइल रिबन लगाएं, या नए प्रॉम्ट से 4K हाई-डेफिनिशन फ़ोटो तैयार करें।
             </p>
           </div>
 
@@ -432,37 +421,15 @@ export const AiImageStudio: React.FC<AiImageStudioProps> = ({
         </div>
       </div>
 
-      {/* 2. Active Model Switcher Strip */}
+      {/* 2. Active Model Banner */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
             Active AI Engine:
           </span>
-          <div className="inline-flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => setAiProvider('gemini')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                aiProvider === 'gemini'
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Nano Banana 2 (Gemini Flash Image)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setAiProvider('chatgpt')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                aiProvider === 'chatgpt'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-            >
-              <Bot className="w-3.5 h-3.5" />
-              <span>ChatGPT (DALL-E 3)</span>
-            </button>
+          <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs">
+            <Bot className="w-4 h-4 text-emerald-500" />
+            <span>OpenAI ChatGPT &amp; DALL-E 3</span>
           </div>
         </div>
 
@@ -470,20 +437,18 @@ export const AiImageStudio: React.FC<AiImageStudioProps> = ({
           <span className="text-slate-500">Key Status:</span>
           <span
             className={`font-semibold flex items-center gap-1 ${
-              (aiProvider === 'gemini' && hasGeminiKey) || (aiProvider === 'chatgpt' && hasOpenAiKey)
-                ? 'text-emerald-600'
-                : 'text-amber-500'
+              hasOpenAiKey ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'
             }`}
           >
-            {(aiProvider === 'gemini' && hasGeminiKey) || (aiProvider === 'chatgpt' && hasOpenAiKey) ? (
+            {hasOpenAiKey ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>API Key Connected</span>
+                <span>OpenAI Key Ready</span>
               </>
             ) : (
               <>
                 <AlertCircle className="w-3.5 h-3.5" />
-                <span>Key Not Configured (Click Configure)</span>
+                <span>OpenAI Key Optional</span>
               </>
             )}
           </span>
@@ -836,53 +801,6 @@ export const AiImageStudio: React.FC<AiImageStudioProps> = ({
             </div>
           )}
 
-          {/* Google Search Grounding Toggle (for Nano Banana 2) */}
-          {aiProvider === 'gemini' && (
-            <div className="p-3.5 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-indigo-500/10 border border-blue-200 dark:border-blue-800/60 rounded-2xl space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
-                  <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">G</span>
-                  <span>Google Search Grounding (Live Web &amp; Image Data)</span>
-                </label>
-                <input
-                  type="checkbox"
-                  checked={useSearchGrounding}
-                  onChange={(e) => setUseSearchGrounding(e.target.checked)}
-                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
-                />
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
-                वास्तविक समय में Google Search डेटा और इमेज सर्च का उपयोग करके नए गैजेट्स, वर्तमान हस्तियों व घटनाओं को सटीक रूप से दर्शाएं।
-              </p>
-            </div>
-          )}
-
-          {/* Image Resolution (Nano Banana 2 supports 512px, 1K, 2K, 4K) */}
-          {aiProvider === 'gemini' && (
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-                <span>Nano Banana 2 Resolution (इमेज रेजोल्यूशन)</span>
-                <span className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">512px to 4K</span>
-              </label>
-              <div className="grid grid-cols-4 gap-1.5">
-                {(['512px', '1K', '2K', '4K'] as const).map((sz) => (
-                  <button
-                    key={sz}
-                    type="button"
-                    onClick={() => setImageSize(sz)}
-                    className={`py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
-                      imageSize === sz
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    {sz}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Aspect Ratio */}
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -900,7 +818,7 @@ export const AiImageStudio: React.FC<AiImageStudioProps> = ({
                   onClick={() => setAspectRatio(r.id as any)}
                   className={`p-2 rounded-xl text-center border transition-colors cursor-pointer ${
                     aspectRatio === r.id
-                      ? 'bg-purple-600 text-white border-purple-600 font-bold'
+                      ? 'bg-emerald-600 text-white border-emerald-600 font-bold'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700'
                   }`}
                 >

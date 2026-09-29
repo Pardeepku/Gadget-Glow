@@ -1,5 +1,6 @@
 import React from 'react';
 import { Article } from '../../types';
+import { INITIAL_ARTICLES } from '../../data/initialData';
 import { Clock, Eye, Flame, Share2 } from 'lucide-react';
 
 interface HeroSectionProps {
@@ -8,10 +9,11 @@ interface HeroSectionProps {
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ articles, onArticleClick }) => {
-  if (!articles || articles.length === 0) return null;
+  const activeArticles = articles && articles.length > 0 ? articles : INITIAL_ARTICLES;
+  if (!activeArticles || activeArticles.length === 0) return null;
 
-  const mainStory = articles.find((a) => a.isFeatured) || articles[0];
-  const sideStories = articles.filter((a) => a.id !== mainStory.id).slice(0, 4);
+  const mainStory = activeArticles.find((a) => a.isFeatured) || activeArticles[0];
+  const sideStories = activeArticles.filter((a) => a.id !== mainStory.id).slice(0, 4);
 
   const formatTime = (isoString?: string) => {
     if (!isoString) return 'हाल ही में';

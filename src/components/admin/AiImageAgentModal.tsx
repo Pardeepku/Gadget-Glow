@@ -73,8 +73,8 @@ export const AiImageAgentModal: React.FC<AiImageAgentModalProps> = ({
   const [useSearchGrounding, setUseSearchGrounding] = useState(true);
   const [imageSize, setImageSize] = useState<'512px' | '1K' | '2K' | '4K'>('1K');
 
-  // Model selection: Google Gemini AI (Nano Banana 2) vs ChatGPT (OpenAI DALL-E)
-  const [aiProvider, setAiProvider] = useState<'gemini' | 'chatgpt'>('gemini');
+  // Model selection: OpenAI ChatGPT (DALL-E 3)
+  const [aiProvider, setAiProvider] = useState<'chatgpt'>('chatgpt');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Results
@@ -83,7 +83,7 @@ export const AiImageAgentModal: React.FC<AiImageAgentModalProps> = ({
   const [resultImageUrl, setResultImageUrl] = useState<string | null>(initialImageUrl || null);
   const [generationLog, setGenerationLog] = useState<string>('');
   const [appliedSuccess, setAppliedSuccess] = useState(false);
-  const [modelLabel, setModelLabel] = useState<string>('Google Gemini (Nano Banana 2)');
+  const [modelLabel, setModelLabel] = useState<string>('OpenAI ChatGPT (DALL-E 3)');
 
   // Pre-fetch AI config to know default provider
   useEffect(() => {
@@ -354,7 +354,7 @@ export const AiImageAgentModal: React.FC<AiImageAgentModalProps> = ({
     setErrorMsg(null);
     setAppliedSuccess(false);
 
-    const providerName = aiProvider === 'chatgpt' ? 'ChatGPT (DALL-E 3)' : 'Google Gemini AI';
+    const providerName = 'OpenAI ChatGPT (DALL-E 3)';
     setGenerationLog(`AI Agent connecting with ${providerName}...`);
 
     try {
@@ -470,7 +470,7 @@ export const AiImageAgentModal: React.FC<AiImageAgentModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-300">
-                Generate similar images, modify styles, or create attractive visuals with Google Gemini & ChatGPT
+                Generate similar images, modify styles, or create attractive visuals with OpenAI ChatGPT & DALL-E 3
               </p>
             </div>
           </div>
@@ -497,44 +497,22 @@ export const AiImageAgentModal: React.FC<AiImageAgentModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-900 dark:text-slate-100">
-          {/* AI Model Switcher Banner */}
+          {/* AI Model Banner */}
           <div className="bg-slate-100 dark:bg-slate-950 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                 Active AI Engine:
               </span>
-              <div className="inline-flex bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setAiProvider('gemini')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    aiProvider === 'gemini'
-                      ? 'bg-purple-600 text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Google Gemini AI</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAiProvider('chatgpt')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    aiProvider === 'chatgpt'
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Bot className="w-3.5 h-3.5" />
-                  <span>ChatGPT (DALL-E 3)</span>
-                </button>
+              <div className="inline-flex items-center gap-1.5 bg-emerald-600/10 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-xl text-xs font-bold">
+                <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                <span>OpenAI ChatGPT (DALL-E 3)</span>
               </div>
             </div>
 
             <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
               <span>Model:</span>
               <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">
-                {aiProvider === 'gemini' ? 'gemini-3.1-flash-lite-image' : 'dall-e-3'}
+                dall-e-3
               </span>
             </div>
           </div>
@@ -782,17 +760,17 @@ export const AiImageAgentModal: React.FC<AiImageAgentModalProps> = ({
                 {isGenerating ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{aiProvider === 'chatgpt' ? 'ChatGPT (DALL-E 3) बना रहा है...' : 'Google Gemini AI चित्र बना रहा है...'}</span>
+                    <span>ChatGPT (DALL-E 3) बना रहा है...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 text-amber-300" />
                     <span>
                       {mode === 'similar'
-                        ? `Generate Similar Image with ${aiProvider === 'chatgpt' ? 'ChatGPT' : 'Gemini'}`
+                        ? 'Generate Similar Image with ChatGPT'
                         : mode === 'modify'
                         ? 'Apply Modifications & Style Enhance'
-                        : `Generate Image with ${aiProvider === 'chatgpt' ? 'ChatGPT (DALL-E 3)' : 'Google Gemini'}`}
+                        : 'Generate Image with ChatGPT (DALL-E 3)'}
                     </span>
                   </>
                 )}

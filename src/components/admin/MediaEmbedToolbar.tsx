@@ -732,7 +732,7 @@ export const MediaEmbedToolbar: React.FC<MediaEmbedToolbarProps> = ({
                               const figureHtml = `
 <figure class="w-full my-4">
   <img src="${img.url}" alt="${img.title}" class="rounded-lg shadow-sm w-full object-cover" />
-  <figcaption class="text-xs text-slate-500 text-center mt-1.5">${img.caption} (Photo: ${img.credit})</figcaption>
+  ${img.caption ? `<figcaption class="text-xs text-slate-500 text-center mt-1.5">${img.caption}</figcaption>` : ''}
 </figure>
 `;
                               onInsertContent(figureHtml);

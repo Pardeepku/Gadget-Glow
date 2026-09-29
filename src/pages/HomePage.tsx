@@ -1,5 +1,6 @@
 import React from 'react';
 import { Article, Category, Subcategory, VideoNews } from '../types';
+import { INITIAL_ARTICLES } from '../data/initialData';
 import { HeroSection } from '../components/home/HeroSection';
 import { HaryanaDistrictSection } from '../components/home/HaryanaDistrictSection';
 import { PoliticsCrimeSection } from '../components/home/PoliticsCrimeSection';
@@ -54,9 +55,11 @@ export const HomePage: React.FC<HomePageProps> = ({
     else if (onNavigate) onNavigate(`/category/${slug}`);
   };
 
-  const publishedArticles = (articles || []).filter((a) => a.status === 'published');
-  const latestArticles = [...publishedArticles].sort(
-    (a, b) => new Date(b.publishedAt || b.createdAt).getTime() - new Date(a.publishedAt || a.createdAt).getTime()
+  // Ensure that even during initial load or offline states, news articles are immediately displayed without empty screens
+  const publishedArticles = (articles || []).filter((a) => !a.status || a.status === 'published');
+  const safeArticles = publishedArticles.length > 0 ? publishedArticles : (articles && articles.length > 0 ? articles : INITIAL_ARTICLES);
+  const latestArticles = [...safeArticles].sort(
+    (a, b) => new Date(b.publishedAt || b.createdAt || 0).getTime() - new Date(a.publishedAt || a.createdAt || 0).getTime()
   );
 
   return (
@@ -65,11 +68,11 @@ export const HomePage: React.FC<HomePageProps> = ({
       <AdBanner position="header" />
 
       {/* 2. Hero Headlines & Top Stories */}
-      <HeroSection articles={publishedArticles} onArticleClick={handleArticleClick} />
+      <HeroSection articles={safeArticles} onArticleClick={handleArticleClick} />
 
       {/* 3. Haryana District Special Section */}
       <HaryanaDistrictSection
-        articles={publishedArticles}
+        articles={safeArticles}
         subcategories={subcategories || []}
         onArticleClick={handleArticleClick}
         onNavigateToCategory={handleNavigateCategory}
@@ -80,7 +83,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       {/* 5. Politics & Crime Section */}
       <PoliticsCrimeSection
-        articles={publishedArticles}
+        articles={safeArticles}
         onArticleClick={handleArticleClick}
         onNavigateToCategory={handleNavigateCategory}
       />
@@ -92,7 +95,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       />
 
       {/* 7. Trending Top Stories Section */}
-      <TrendingSection articles={publishedArticles} onArticleClick={handleArticleClick} />
+      <TrendingSection articles={safeArticles} onArticleClick={handleArticleClick} />
 
       {/* 8. Latest Feed + Category Spotlights */}
       <section className="my-8">

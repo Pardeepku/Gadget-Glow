@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Article, Category, Subcategory } from '../types';
+import { INITIAL_ARTICLES } from '../data/initialData';
 import { dbService } from '../services/db';
 import { updateMetaTags } from '../utils/seo';
 import { AdBanner } from '../components/common/AdBanner';
@@ -10,6 +11,7 @@ export interface CategoryPageProps {
   subcategorySlug?: string;
   categories?: Category[];
   subcategories?: Subcategory[];
+  articles?: Article[];
   onArticleClick?: (slug: string) => void;
   onSelectArticle?: (slug: string) => void;
   onSelectCategory?: (slug: string) => void;
@@ -21,15 +23,39 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
   subcategorySlug,
   categories: initialCategories,
   subcategories: initialSubcategories,
+  articles: initialArticles,
   onArticleClick,
   onSelectArticle,
   onNavigate,
 }) => {
   const [categories, setCategories] = useState<Category[]>(initialCategories || []);
   const [subcategories, setSubcategories] = useState<Subcategory[]>(initialSubcategories || []);
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [articles, setArticles] = useState<Article[]>(() => {
+    const pool = initialArticles && initialArticles.length > 0 ? initialArticles : INITIAL_ARTICLES;
+    const match = pool.filter(
+      (a) =>
+        a.categoryId === categorySlug ||
+        a.categoryName === categorySlug ||
+        a.categoryId === `cat-${categorySlug}`
+    );
+    return match.length > 0 ? match : pool.slice(0, 6);
+  });
   const [selectedSub, setSelectedSub] = useState<string>(subcategorySlug || 'all');
   const [sortBy, setSortBy] = useState<'latest' | 'views'>('latest');
+
+  useEffect(() => {
+    if (initialArticles && initialArticles.length > 0) {
+      const match = initialArticles.filter(
+        (a) =>
+          a.categoryId === categorySlug ||
+          a.categoryName === categorySlug ||
+          a.categoryId === `cat-${categorySlug}`
+      );
+      if (match.length > 0) {
+        setArticles(match);
+      }
+    }
+  }, [initialArticles, categorySlug]);
 
   useEffect(() => {
     if (!initialCategories || initialCategories.length === 0) {
@@ -72,7 +98,23 @@ export const CategoryPage: React.FC<CategoryPageProps> = ({
   useEffect(() => {
     let mounted = true;
     dbService.getArticles({ categoryId: currentCategory.id, status: 'published' }).then((data) => {
-      if (mounted) setArticles(data || []);
+      if (mounted) {
+        if (data && data.length > 0) {
+          setArticles(data);
+        } else {
+          const pool = initialArticles && initialArticles.length > 0 ? initialArticles : INITIAL_ARTICLES;
+          const match = pool.filter(
+            (a) =>
+              a.categoryId === currentCategory.id ||
+              a.categoryId === categorySlug ||
+              a.categoryName === currentCategory.nameHi ||
+              a.categoryName === currentCategory.name
+          );
+          if (match.length > 0) {
+            setArticles(match);
+          }
+        }
+      }
     });
 
     updateMetaTags({

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Article } from '../../types';
+import { INITIAL_ARTICLES } from '../../data/initialData';
 import { ShieldAlert, Landmark, ChevronRight, Clock } from 'lucide-react';
 
 interface PoliticsCrimeSectionProps {
@@ -13,11 +14,12 @@ export const PoliticsCrimeSection: React.FC<PoliticsCrimeSectionProps> = ({
   onArticleClick,
   onNavigateToCategory,
 }) => {
-  const politics = articles.filter((a) => a.categoryId === 'cat-rajneeti' || a.tags.includes('राजनीति')).slice(0, 3);
-  const crime = articles.filter((a) => a.categoryId === 'cat-apradh' || a.tags.includes('अपराध') || a.tags.includes('क्राइम')).slice(0, 3);
+  const safeArticles = articles && articles.length > 0 ? articles : INITIAL_ARTICLES;
+  const politics = safeArticles.filter((a) => a.categoryId === 'cat-rajneeti' || (Array.isArray(a.tags) && a.tags.includes('राजनीति'))).slice(0, 3);
+  const crime = safeArticles.filter((a) => a.categoryId === 'cat-apradh' || (Array.isArray(a.tags) && (a.tags.includes('अपराध') || a.tags.includes('क्राइम')))).slice(0, 3);
 
-  const fallbackPolitics = politics.length > 0 ? politics : articles.slice(0, 3);
-  const fallbackCrime = crime.length > 0 ? crime : articles.slice(3, 6);
+  const fallbackPolitics = politics.length > 0 ? politics : safeArticles.slice(0, 3);
+  const fallbackCrime = crime.length > 0 ? crime : safeArticles.slice(3, 6);
 
   return (
     <section className="my-8 grid grid-cols-1 lg:grid-cols-2 gap-8">

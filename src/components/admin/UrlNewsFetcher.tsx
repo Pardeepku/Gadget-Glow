@@ -236,7 +236,7 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
       showNotification(`🌐 Real-time info retrieved with Google Search Grounding (${res.sources.length} sources linked)!`);
     } catch (err: any) {
       console.error('Search grounding error:', err);
-      setGroundingError(err?.message || 'Failed to retrieve real-time data. Verify Gemini API key.');
+      setGroundingError(err?.message || 'Failed to retrieve real-time data. Verify OpenAI API key.');
     } finally {
       setIsResearchingSearch(false);
     }
@@ -282,7 +282,7 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
       suggestedSlug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '').slice(0, 50) || `news-${Date.now()}`,
       targetCategoryId: categories[0]?.id || 'cat-tech',
       isRewritten: true,
-      aiProvider: 'Google Gemini (gemini-3.8-flash with Google Search Grounding)',
+      aiProvider: 'OpenAI ChatGPT',
       status: 'rewritten',
     };
 
@@ -348,7 +348,7 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
         setHistoryItems((prev) =>
           prev.map((h) => (h.id === fetchedItem.id ? { ...h, originalImage: res.imageUrl } : h))
         );
-        showNotification(res.message || '✨ Google Gemini AI द्वारा नया आकर्षक चित्र रीजेनरेट कर दिया गया है!');
+        showNotification(res.message || '✨ OpenAI ChatGPT / DALL-E द्वारा नया आकर्षक चित्र तैयार कर दिया गया है!');
       }
     } catch (e: any) {
       console.warn('Quick regenerate error:', e);
@@ -465,8 +465,8 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-400/30 font-semibold px-2 py-1 rounded-lg">
-                gemini-3.8-flash + googleSearch
+              <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-400/30 font-semibold px-2 py-1 rounded-lg">
+                OpenAI ChatGPT Engine
               </span>
             </div>
           </div>
@@ -987,7 +987,7 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
                     className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md shadow-purple-900/20 transition-all cursor-pointer disabled:opacity-60"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 text-amber-300 ${isRegeneratingImage ? 'animate-spin' : ''}`} />
-                    <span>{isRegeneratingImage ? 'Google Gemini AI चित्र बना रहा है...' : '🔄 Regenerate Image with Gemini AI'}</span>
+                    <span>{isRegeneratingImage ? 'OpenAI DALL-E चित्र बना रहा है...' : '🔄 Regenerate Image with ChatGPT'}</span>
                   </button>
                   <button
                     type="button"
@@ -1112,7 +1112,7 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
                   className="bg-amber-500 hover:bg-amber-600 disabled:opacity-75 text-slate-950 font-bold px-4.5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-colors shadow-md cursor-pointer"
                 >
                   <Sparkles className={`w-4 h-4 ${isRewritingWithAi ? 'animate-spin text-red-950' : ''}`} />
-                  <span>{isRewritingWithAi ? `⚡ Rewriting (${rewriteSeconds}s)...` : '✨ Rewrite with Gemini AI (1-2s)'}</span>
+                  <span>{isRewritingWithAi ? `⚡ Rewriting (${rewriteSeconds}s)...` : '✨ Rewrite with ChatGPT (1-2s)'}</span>
                 </button>
               )}
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Article, Subcategory } from '../../types';
+import { INITIAL_ARTICLES, INITIAL_SUBCATEGORIES } from '../../data/initialData';
 import { MapPin, ChevronRight, Clock, Eye } from 'lucide-react';
 
 interface HaryanaDistrictSectionProps {
@@ -17,8 +18,8 @@ export const HaryanaDistrictSection: React.FC<HaryanaDistrictSectionProps> = ({
 }) => {
   const [selectedDistrict, setSelectedDistrict] = useState<string>('all');
 
-  const safeArticles = articles || [];
-  const safeSubcategories = subcategories || [];
+  const safeArticles = articles && articles.length > 0 ? articles : INITIAL_ARTICLES;
+  const safeSubcategories = subcategories && subcategories.length > 0 ? subcategories : INITIAL_SUBCATEGORIES;
 
   const haryanaArticles = safeArticles.filter(
     (a) =>
@@ -28,10 +29,12 @@ export const HaryanaDistrictSection: React.FC<HaryanaDistrictSectionProps> = ({
       (a.location && a.location.includes('हरियाणा'))
   );
 
+  const fallbackArticles = haryanaArticles.length > 0 ? haryanaArticles : safeArticles.slice(0, 6);
+
   const filtered =
     selectedDistrict === 'all'
-      ? haryanaArticles
-      : haryanaArticles.filter(
+      ? fallbackArticles
+      : fallbackArticles.filter(
           (a) =>
             a.subcategoryId === selectedDistrict ||
             a.subcategoryName === selectedDistrict ||
@@ -39,7 +42,7 @@ export const HaryanaDistrictSection: React.FC<HaryanaDistrictSectionProps> = ({
             a.location === selectedDistrict
         );
 
-  const displayList = filtered.length > 0 ? filtered : haryanaArticles;
+  const displayList = filtered.length > 0 ? filtered : fallbackArticles;
 
   return (
     <section className="my-8 bg-slate-50 border border-neutral-200 rounded-xl p-5">

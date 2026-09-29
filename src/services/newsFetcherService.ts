@@ -256,17 +256,17 @@ export async function fetchNewsFromUrl(targetUrl: string): Promise<RawNewsItem> 
   let htmlContent = '';
   let finalUrl = trimmedUrl;
 
-  // 1. Try local server middleware (/api/fetch-url) first with 2.8s fast timeout
+  // 1. Try local server middleware (/api/fetch-url) first with 12s timeout for reliable web news fetching
   try {
     const apiEndpoint = `/api/fetch-url?url=${encodeURIComponent(trimmedUrl)}`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2800);
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
     const res = await fetch(apiEndpoint, { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (res.ok) {
       const data = await res.json();
-      if (data.html && typeof data.html === 'string') {
+      if (data.html && typeof data.html === 'string' && data.html.length > 100) {
         htmlContent = data.html;
         finalUrl = data.finalUrl || trimmedUrl;
       }
@@ -275,23 +275,30 @@ export async function fetchNewsFromUrl(targetUrl: string): Promise<RawNewsItem> 
     console.warn('Local /api/fetch-url timed out or unavailable, trying fast proxy fallback:', localErr);
   }
 
-  // 2. If local endpoint didn't succeed, try rapid public proxy with 1.8s timeout
+  // 2. If local endpoint didn't succeed, try rapid public proxies
   if (!htmlContent) {
-    try {
-      const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(trimmedUrl)}`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1800);
-      const resp = await fetch(proxy, { signal: controller.signal });
-      clearTimeout(timeoutId);
+    const fallbackProxies = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(trimmedUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(trimmedUrl)}`,
+    ];
 
-      if (resp.ok) {
-        const text = await resp.text();
-        if (text && text.length > 200) {
-          htmlContent = text;
+    for (const proxy of fallbackProxies) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const resp = await fetch(proxy, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (resp.ok) {
+          const text = await resp.text();
+          if (text && text.length > 200) {
+            htmlContent = text;
+            break;
+          }
         }
+      } catch {
+        // Try next proxy
       }
-    } catch {
-      // Continue to fast heuristic parser
     }
   }
 
@@ -453,13 +460,13 @@ export function transformNewsWithAI(
     newTitle = `${item.originalTitle} — विशेष रिपोर्ट`;
   }
 
-  const newSummary = `【गैजेट ग्लो डिजिटल डेस्क】 ${item.originalSummary || item.originalTitle} जानिए इस पूरे मामले के सभी प्रमुख बिंदु और इसके दूरगामी प्रभाव।`;
+  const newSummary = `${item.originalSummary || item.originalTitle} जानिए इस पूरे मामले के सभी प्रमुख बिंदु और इसके दूरगामी प्रभाव।`;
 
   const rawText = item.originalContent.replace(/<[^>]*>?/gm, ' ').trim();
   const sentences = rawText.split(/[।.]/).map((s) => s.trim()).filter((s) => s.length > 5);
 
   let structuredBody = `
-<p class="lead font-medium text-slate-700"><strong>गैजेट ग्लो डेस्क:</strong> ${sentences[0] ? sentences[0] + '।' : item.originalSummary}</p>
+<p class="lead font-medium text-slate-700">${sentences[0] ? sentences[0] + '।' : item.originalSummary}</p>
 
 <div class="bg-amber-50/80 border-l-4 border-amber-500 p-3.5 my-4 rounded-r-lg">
   <h4 class="font-bold text-amber-900 text-sm mb-1">📌 मुख्य बिंदु (Key Highlights):</h4>
@@ -526,7 +533,7 @@ ${item.originalContent}
 }
 
 /**
- * Access real-time web information with Google Search Grounding (gemini-3.8-flash)
+ * Access real-time web news research with OpenAI ChatGPT
  */
 export async function researchTopicWithSearchGrounding(
   query: string,
@@ -554,7 +561,7 @@ export async function researchTopicWithSearchGrounding(
       groundedText: data.groundedText || '',
       sources: Array.isArray(data.sources) ? data.sources : [],
       webSearchQueries: Array.isArray(data.webSearchQueries) ? data.webSearchQueries : [],
-      provider: data.provider || 'Google Gemini (gemini-3.8-flash with Google Search Grounding)',
+      provider: data.provider || 'OpenAI ChatGPT',
     };
   } catch (err: any) {
     console.error('researchTopicWithSearchGrounding error:', err);
@@ -563,13 +570,13 @@ export async function researchTopicWithSearchGrounding(
       groundedText: '',
       sources: [],
       webSearchQueries: [],
-      error: err?.message || 'Failed to research topic with Google Search Grounding',
+      error: err?.message || 'Failed to research topic with OpenAI ChatGPT',
     };
   }
 }
 
 /**
- * Rewrites news using server-side Gemini AI in seconds with editorial fallback & optional Search Grounding
+ * Rewrites news using server-side OpenAI ChatGPT AI in seconds with editorial fallback
  */
 export async function rewriteNewsWithServerAI(
   item: RawNewsItem,
@@ -645,7 +652,7 @@ export async function rewriteNewsWithServerAI(
           targetSubcategoryId: targetSubCat?.id,
           detectedDistrict: district,
           isRewritten: true,
-          aiProvider: data.provider || 'Google Gemini AI (gemini-3.8-flash)',
+          aiProvider: data.provider || 'OpenAI ChatGPT (gpt-4o-mini)',
           rewriteDurationMs: duration,
           status: 'rewritten',
         };
@@ -665,13 +672,13 @@ export async function rewriteNewsWithServerAI(
 }
 
 /**
- * Regenerates news image using Google Gemini Nano Banana 2 or ChatGPT
+ * Regenerates news image using OpenAI ChatGPT (DALL-E 3)
  */
 export async function regenerateNewsImageWithAI(
   headline: string,
   referenceImageUrl: string,
   category = 'tech',
-  provider: 'gemini' | 'chatgpt' = 'gemini',
+  provider: 'chatgpt' = 'chatgpt',
   useSearchGrounding = false
 ): Promise<{ imageUrl: string; provider: string; message: string }> {
   try {
@@ -736,8 +743,8 @@ export function convertToArticle(
     featuredImage:
       item.originalImage ||
       'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80',
-    imageCaption: `${item.detectedDistrict ? `${item.detectedDistrict}: ` : ''}${item.rewrittenTitle || item.originalTitle}`,
-    imageCredit: item.sourceName ? `साभार: ${item.sourceName}` : '',
+    imageCaption: item.rewrittenTitle || item.originalTitle,
+    imageCredit: '',
     showImageCredit: false,
     imageAlt: item.rewrittenTitle || item.originalTitle,
     categoryId: item.targetCategoryId || 'cat-desh',

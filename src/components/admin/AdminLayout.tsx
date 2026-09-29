@@ -78,7 +78,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
       id: 'ai_models',
       label: 'AI Models & API Keys',
       icon: <Bot className="w-4 h-4 text-emerald-400" />,
-      badge: 'Gemini + ChatGPT',
+      badge: 'OpenAI ChatGPT',
     },
     { id: 'breaking', label: 'Breaking News Ticker', icon: <Flame className="w-4 h-4 text-amber-400" /> },
     { id: 'categories', label: 'Categories & Districts', icon: <FolderTree className="w-4 h-4" /> },

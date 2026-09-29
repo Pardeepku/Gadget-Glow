@@ -426,11 +426,11 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
               {featuredImage && (
                 <div className="rounded-xl overflow-hidden bg-slate-900">
                   <img src={featuredImage} alt="Featured" className="w-full max-h-[400px] object-cover" />
-                  {(imageCaption || (showImageCredit && imageCredit)) && (
+                  {(imageCaption || (showImageCredit === true && imageCredit?.trim())) && (
                     <div className="bg-slate-950 text-slate-300 text-xs p-2.5 flex justify-between">
                       <span>{imageCaption}</span>
-                      {showImageCredit && imageCredit && (
-                        <span className="font-mono text-slate-400">फोटो: {imageCredit}</span>
+                      {showImageCredit === true && imageCredit?.trim() && (
+                        <span className="font-mono text-slate-400">फोटो: {imageCredit.trim()}</span>
                       )}
                     </div>
                   )}
@@ -702,11 +702,11 @@ export const ArticleEditorModal: React.FC<ArticleEditorModalProps> = ({
                               type="text"
                               value={imageCredit}
                               onChange={(e) => setImageCredit(e.target.value)}
-                              placeholder="साभार: HRBREAKINGNEWS / पीटीआई / विशेष संवाददाता"
+                              placeholder="उदा. विशेष संवाददाता / न्यूज़ एजेंसी"
                               className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
                             />
                             <p className="text-[10px] text-slate-400">
-                              यह क्रेडिट फ़ोटो के नीचे दाईं ओर "फोटो: {imageCredit || '...'}" के रूप में दिखाई देगा।
+                              यदि यह चेक किया गया है, तो यह क्रेडिट फ़ोटो के नीचे दाईं ओर "फोटो: {imageCredit || '...'}" के रूप में दिखाई देगा।
                             </p>
                           </div>
                         )}

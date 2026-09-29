@@ -1,5 +1,6 @@
 import React from 'react';
 import { Article } from '../../types';
+import { INITIAL_ARTICLES } from '../../data/initialData';
 import { TrendingUp, Eye } from 'lucide-react';
 
 interface TrendingSectionProps {
@@ -8,8 +9,9 @@ interface TrendingSectionProps {
 }
 
 export const TrendingSection: React.FC<TrendingSectionProps> = ({ articles, onArticleClick }) => {
+  const safeArticles = articles && articles.length > 0 ? articles : INITIAL_ARTICLES;
   // Sort by views descending
-  const sorted = [...articles].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 6);
+  const sorted = [...safeArticles].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 6);
 
   return (
     <section className="my-8 bg-white border border-neutral-200 rounded-xl p-5 shadow-xs">
