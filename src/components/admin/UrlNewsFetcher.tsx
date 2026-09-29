@@ -206,7 +206,7 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
       showNotification(`✨ News rewritten in ${durationSec}s with AI! ${useSearchGrounding ? '(Verified with Google Search Data)' : ''}`);
     } catch (err: any) {
       console.error('AI Rewrite Error:', err);
-      alert('AI Rewrite encountered a temporary issue. Please try again.');
+      setFetchError(err?.message || 'AI Rewrite encountered a temporary issue. Please try again.');
     } finally {
       if (rewriteIntervalRef.current) clearInterval(rewriteIntervalRef.current);
       setIsRewritingWithAi(false);
@@ -318,7 +318,7 @@ export const UrlNewsFetcher: React.FC<UrlNewsFetcherProps> = ({
       );
     } catch (err: any) {
       console.error('Publish error:', err);
-      alert(`समाचार प्रकाशित करने में त्रुटि: ${err?.message || 'कृपया पुनः प्रयास करें'}`);
+      setFetchError(`समाचार प्रकाशित करने में त्रुटि: ${err?.message || 'कृपया पुनः प्रयास करें'}`);
     } finally {
       setPublishingId(null);
     }

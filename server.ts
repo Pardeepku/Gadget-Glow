@@ -214,59 +214,143 @@ app.get('/api/ai/proxy-image', async (req, res) => {
   }
 });
 
-// 1. Fast URL Scraper Proxy endpoint with timeout and bot-resilient headers
+// 1. Fast URL Scraper Proxy endpoint with timeout, bot-resilient headers, and reader fallbacks
 app.get('/api/fetch-url', async (req, res) => {
   try {
-    const targetUrl = req.query.url as string;
+    const targetUrl = (req.query.url as string || '').trim();
     if (!targetUrl || !targetUrl.startsWith('http')) {
       res.status(400).json({ error: 'Valid URL parameter is required' });
       return;
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    const response = await fetch(targetUrl, {
-      signal: controller.signal,
-      redirect: 'follow',
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'hi,en-US,en;q=0.9',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-      },
-    });
-
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      const html = await response.text();
-      res.json({
-        html,
-        finalUrl: response.url || targetUrl,
-      });
-      return;
-    }
-
-    // Try fallback proxy if direct fetch returned 403 or non-200
+    // 1. Direct fetch with real browser headers
     try {
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-      const proxyResp = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
-      if (proxyResp.ok) {
-        const proxyHtml = await proxyResp.text();
-        if (proxyHtml && proxyHtml.length > 200) {
-          res.json({ html: proxyHtml, finalUrl: targetUrl });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      const response = await fetch(targetUrl, {
+        signal: controller.signal,
+        redirect: 'follow',
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'hi,en-US,en;q=0.9',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const html = await response.text();
+        if (html && html.length > 500) {
+          res.json({
+            success: true,
+            html,
+            finalUrl: response.url || targetUrl,
+          });
           return;
         }
       }
-    } catch {
-      // Continue to error
+    } catch (directErr) {
+      console.warn('Direct fetch attempt failed, trying reader fallback:', (directErr as any)?.message);
     }
 
-    res.status(response.status).json({
-      error: `Remote news server returned status ${response.status}`,
+    // 2. High-performance Reader fallback (r.jina.ai) to bypass Cloudflare/JS paywalls
+    try {
+      const jinaController = new AbortController();
+      const jinaTimeoutId = setTimeout(() => jinaController.abort(), 12000);
+      const jinaResp = await fetch(`https://r.jina.ai/${targetUrl}`, {
+        signal: jinaController.signal,
+        headers: {
+          'Accept': 'text/plain',
+          'X-Return-Format': 'markdown',
+        },
+      });
+      clearTimeout(jinaTimeoutId);
+
+      if (jinaResp.ok) {
+        const text = await jinaResp.text();
+        if (text && text.length > 200) {
+          const titleMatch = text.match(/^Title:\s*([^\r\n]+)/m);
+          const rawTitle = titleMatch ? titleMatch[1].trim() : '';
+
+          const allImages = [...text.matchAll(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g)].map((m) => m[1]);
+          const contentImages = allImages.filter(
+            (img) =>
+              !img.includes('logo') &&
+              !img.includes('download.png') &&
+              !img.includes('favicon') &&
+              !img.includes('icon') &&
+              !img.endsWith('.svg')
+          );
+          const leadImage = contentImages[0] || allImages[0] || '';
+
+          const bodyIdx = text.indexOf('Markdown Content:');
+          const bodyText = bodyIdx !== -1 ? text.slice(bodyIdx + 17) : text;
+          const paragraphs = bodyText
+            .split(/\n\s*\n/)
+            .map((p) => p.trim())
+            .filter(
+              (p) =>
+                p.length > 20 &&
+                !p.startsWith('[') &&
+                !p.startsWith('!') &&
+                !p.startsWith('#') &&
+                !p.includes('EDITORIAL POLICY') &&
+                !p.includes('FACT-CHECKING') &&
+                !p.includes('CORRECTION POLICY')
+            );
+
+          const summary = paragraphs[0]?.replace(/\*\*/g, '').slice(0, 240) || '';
+          const htmlContent = paragraphs
+            .slice(0, 12)
+            .map((p) => `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`)
+            .join('\n');
+
+          const wrappedHtml = `<!DOCTYPE html><html><head><title>${rawTitle}</title><meta property="og:title" content="${rawTitle}"><meta property="og:description" content="${summary}"><meta property="og:image" content="${leadImage}"></head><body><h1>${rawTitle}</h1><img src="${leadImage}" alt="${rawTitle}" /><div class="article-body">${htmlContent}</div></body></html>`;
+
+          res.json({
+            success: true,
+            title: rawTitle,
+            summary,
+            content: htmlContent,
+            image: leadImage,
+            html: wrappedHtml,
+            finalUrl: targetUrl,
+          });
+          return;
+        }
+      }
+    } catch (jinaErr) {
+      console.warn('Jina reader attempt failed:', (jinaErr as any)?.message);
+    }
+
+    // 3. Fallback public CORS proxies
+    const fallbackProxies = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+    ];
+
+    for (const proxyUrl of fallbackProxies) {
+      try {
+        const proxyResp = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+        if (proxyResp.ok) {
+          const proxyHtml = await proxyResp.text();
+          if (proxyHtml && proxyHtml.length > 200) {
+            res.json({ success: true, html: proxyHtml, finalUrl: targetUrl });
+            return;
+          }
+        }
+      } catch {
+        // Try next proxy
+      }
+    }
+
+    res.status(502).json({
+      error: 'Remote news server could not be reached via standard or reader proxies.',
     });
   } catch (err: any) {
     res.status(504).json({

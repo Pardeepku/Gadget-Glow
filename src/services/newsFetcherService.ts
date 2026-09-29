@@ -52,6 +52,11 @@ export const DEFAULT_FETCH_SETTINGS: AutoFetchSettings = {
 // Popular sample news article URLs for one-click testing
 export const SAMPLE_NEWS_URLS = [
   {
+    name: 'HR Breaking News (Business/Gold-Silver)',
+    url: 'https://hrbreakingnews.com/business/gold-silver-rate-gold-3000-and-silver-7000-rupees-on/cid19308219.htm',
+    badge: 'HR Breaking',
+  },
+  {
     name: 'Amar Ujala (Haryana)',
     url: 'https://www.amarujala.com/haryana/karnal',
     badge: 'Amar Ujala',
@@ -245,6 +250,67 @@ function detectCategory(title: string, content: string, url: string): string {
 }
 
 /**
+ * Intelligent topic image selector ensuring high-definition journalistic visual
+ */
+export function getContextualNewsImage(text: string, category?: string): string {
+  const t = (text + ' ' + (category || '')).toLowerCase();
+  if (t.includes('silver') || t.includes('gold') || t.includes('सोना') || t.includes('चांदी') || t.includes('bullion')) {
+    return 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=1200&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('market') || t.includes('sensex') || t.includes('nifty') || t.includes('share') || t.includes('stock') || t.includes('bazaar') || t.includes('business') || t.includes('rate') || t.includes('price')) {
+    return 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('weather') || t.includes('rain') || t.includes('barish') || t.includes('mausam') || t.includes('बारिश') || t.includes('मौसम') || t.includes('alert')) {
+    return 'https://images.unsplash.com/photo-1519692933481-e162a57d6721?w=1200&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('police') || t.includes('crime') || t.includes('arrest') || t.includes('court') || t.includes('पुलिस') || t.includes('क्राइम') || t.includes('हादसा')) {
+    return 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1200&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('election') || t.includes('neta') || t.includes('cm') || t.includes('bjp') || t.includes('congress') || t.includes('aap') || t.includes('chunav') || t.includes('चुनाव') || t.includes('राजनीति')) {
+    return 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=1200&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('haryana') || t.includes('panipat') || t.includes('karnal') || t.includes('hisar') || t.includes('rohtak') || t.includes('gurugram')) {
+    return 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=1200&auto=format&fit=crop&q=80';
+  }
+  if (t.includes('phone') || t.includes('tech') || t.includes('ai') || t.includes('mobile') || t.includes('apple') || t.includes('samsung') || t.includes('laptop')) {
+    return 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=1200&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&auto=format&fit=crop&q=80';
+}
+
+/**
+ * Intelligent headline extractor that finds the actual news slug from any URL structure
+ */
+export function extractHeadlineFromUrl(urlStr: string): string {
+  try {
+    const urlObj = new URL(urlStr);
+    const pathParts = urlObj.pathname.split('/').filter(Boolean);
+    const candidates = pathParts
+      .map((part) => decodeURIComponent(part).replace(/\.html?$/i, '').trim())
+      .filter((part) => {
+        if (/^(cid|id|art|article|story|post)?[0-9_-]+$/i.test(part)) return false;
+        if (['news', 'article', 'articles', 'story', 'stories', 'business', 'india', 'national', 'hindi', 'breaking', 'big-breaking'].includes(part.toLowerCase())) return false;
+        return true;
+      });
+
+    const bestPart = candidates.sort((a, b) => b.length - a.length)[0] || pathParts[pathParts.length - 1] || '';
+    let cleaned = bestPart
+      .replace(/[-_]?(cid|id|art)[0-9]+/gi, '')
+      .replace(/\b[0-9]{6,}\b/g, '')
+      .replace(/[-_]+/g, ' ')
+      .trim();
+
+    if (cleaned.length > 5) {
+      return cleaned
+        .split(' ')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    }
+  } catch {}
+  return '';
+}
+
+/**
  * Core function: Fetches and parses any web news article URL
  */
 export async function fetchNewsFromUrl(targetUrl: string): Promise<RawNewsItem> {
@@ -260,12 +326,40 @@ export async function fetchNewsFromUrl(targetUrl: string): Promise<RawNewsItem> 
   try {
     const apiEndpoint = `/api/fetch-url?url=${encodeURIComponent(trimmedUrl)}`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const timeoutId = setTimeout(() => controller.abort(), 14000);
     const res = await fetch(apiEndpoint, { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (res.ok) {
       const data = await res.json();
+
+      // If backend reader proxy already extracted title & content directly
+      if (data.title && (data.summary || data.content)) {
+        const sourceName = extractSourceName(trimmedUrl);
+        const cleanTitle = cleanNewsTitle(data.title);
+        const detectedCat = detectCategory(cleanTitle, data.content || data.summary, trimmedUrl);
+        const detectedDist = detectDistrict(cleanTitle + ' ' + (data.content || ''), trimmedUrl);
+        const finalImage =
+          data.image && !data.image.includes('favicon') && !data.image.includes('download.png')
+            ? data.image
+            : getContextualNewsImage(cleanTitle, detectedCat);
+
+        return {
+          id: `url-item-${Date.now()}`,
+          source: 'custom_url',
+          sourceName,
+          sourceUrl: trimmedUrl,
+          originalTitle: cleanTitle,
+          originalSummary: data.summary || cleanTitle,
+          originalContent: data.content || `<p>${data.summary || cleanTitle}</p>`,
+          originalImage: finalImage,
+          originalPubDate: new Date().toISOString(),
+          detectedCategory: detectedCat,
+          detectedDistrict: detectedDist,
+          status: 'pending',
+        };
+      }
+
       if (data.html && typeof data.html === 'string' && data.html.length > 100) {
         htmlContent = data.html;
         finalUrl = data.finalUrl || trimmedUrl;
@@ -347,8 +441,11 @@ export async function fetchNewsFromUrl(targetUrl: string): Promise<RawNewsItem> 
         }
       }
 
-      if (!image || image.includes('favicon') || image.includes('logo')) {
-        image = 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80';
+      const detectedCat = detectCategory(title, summary, finalUrl);
+      const detectedDist = detectDistrict(title + ' ' + summary, finalUrl);
+
+      if (!image || image.includes('favicon') || image.includes('logo') || image.includes('download.png')) {
+        image = getContextualNewsImage(title || summary, detectedCat);
       } else {
         try {
           image = new URL(image, finalUrl).href;
@@ -388,9 +485,6 @@ export async function fetchNewsFromUrl(targetUrl: string): Promise<RawNewsItem> 
         doc.querySelector('meta[property="article:published_time"]')?.getAttribute('content') ||
         new Date().toISOString();
 
-      const detectedCat = detectCategory(title, content, finalUrl);
-      const detectedDist = detectDistrict(title + ' ' + content, finalUrl);
-
       if (title && (summary || content)) {
         return {
           id: `url-item-${Date.now()}`,
@@ -413,22 +507,13 @@ export async function fetchNewsFromUrl(targetUrl: string): Promise<RawNewsItem> 
   }
 
   // 4. Intelligent Heuristic Fallback based on URL path and query parameters
-  const urlObj = new URL(trimmedUrl);
-  const pathParts = urlObj.pathname.split('/').filter(Boolean);
-  const lastPart = pathParts[pathParts.length - 1] || 'news-article';
-  const cleanHeadlineFromSlug = decodeURIComponent(lastPart)
-    .replace(/\.html?$/i, '')
-    .replace(/[-_]/g, ' ')
-    .replace(/\b[0-9]{5,}\b/g, '')
-    .trim();
-
+  const smartHeadline = extractHeadlineFromUrl(trimmedUrl);
   const sourceName = extractSourceName(trimmedUrl);
-  const detectedCat = detectCategory(cleanHeadlineFromSlug, cleanHeadlineFromSlug, trimmedUrl);
-  const detectedDist = detectDistrict(cleanHeadlineFromSlug, trimmedUrl);
+  const detectedCat = detectCategory(smartHeadline, smartHeadline, trimmedUrl);
+  const detectedDist = detectDistrict(smartHeadline, trimmedUrl);
+  const fallbackImage = getContextualNewsImage(smartHeadline, detectedCat);
 
-  const fallbackTitle = cleanHeadlineFromSlug
-    ? cleanHeadlineFromSlug.charAt(0).toUpperCase() + cleanHeadlineFromSlug.slice(1)
-    : `${sourceName} News Article`;
+  const fallbackTitle = smartHeadline || `${sourceName} News Update`;
 
   return {
     id: `url-item-${Date.now()}`,
@@ -438,7 +523,7 @@ export async function fetchNewsFromUrl(targetUrl: string): Promise<RawNewsItem> 
     originalTitle: fallbackTitle,
     originalSummary: `Summary fetched from ${sourceName}: ${fallbackTitle}. Full coverage and key insights reported by digital editorial desk.`,
     originalContent: `<p><strong>${sourceName} Desk:</strong> ${fallbackTitle}. Key developments are currently unfolding regarding this story.</p><p>According to official reports and sources, relevant authorities have been briefed and further comprehensive updates will be provided as details emerge.</p>`,
-    originalImage: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80',
+    originalImage: fallbackImage,
     originalPubDate: new Date().toISOString(),
     detectedCategory: detectedCat,
     detectedDistrict: detectedDist,
